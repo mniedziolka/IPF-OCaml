@@ -14,33 +14,44 @@ let wartosc_dokladna x =
 
 
 let in_wartosc w x = 
-    if !w.czyodwrocony 
+    if w.czyodwrocony 
     then
-        w.lewa < x && x < w.prawa
+        (x < (w.lewa)) || ((w.prawa) < x)
     else
-        x < w.lewa || w.prawa < x
+        ((w.lewa) < x) && (x < (w.prawa))
 ;;
 
 let min_wartosc w = 
-    if !w.czyodwrocony
+    if w.czyodwrocony
     then
-        w.lewa
-    else
         neg_infinity
+    else
+        w.lewa
 ;;
 
 let max_wartosc w =
-    if !w.czyodwrocony
+    if w.czyodwrocony
     then
+        infinity        
+    else
         w.prawa
-    else 
-        infinity
 ;;
 
 let sr_wartosc w =
-    if !w.czyodwrocony
+    if w.czyodwrocony
     then
-        (min_wartosc w +. max_wartosc w) /. 2
-    else
         nan
+    else
+        (min_wartosc w +. max_wartosc w) /. 2.0
+;;
+
+
+let plus a b =
+    if a.czyodwrocony
+    then 
+        if b.czyodwrocony
+        then
+            {lewa = neg_infinity; prawa = infinity; czyodwrocony = false}
+        else
+            {lewa = a.lewa + b.prawa; prawa = }
 ;;
