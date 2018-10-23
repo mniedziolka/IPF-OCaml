@@ -47,6 +47,7 @@ let sr_wartosc w =
 
 
 let plus a b =
+    if a.
     if a.czyodwrocony
     then 
         if b.czyodwrocony
