@@ -5,17 +5,35 @@ type wartosc = {
     czypusty : bool;
 }
 
-let wartosc_dokladnosc x p =
-    {lewa = x *. (1. -. p /. 100.); prawa = x *. (1. +. p /. 100.); czyodwrocony = false; czypusty = false}
-;;
+let wartosc_dokladnosc x p = {
+    lewa = x *. (1. -. p /. 100.); 
+    prawa = x *. (1. +. p /. 100.); 
+    czyodwrocony = false; 
+    czypusty = false
+};;
 
-let wartosc_od_do x y =
-    {lewa = x; prawa = y; czyodwrocony = false; czypusty = false}
-;;
+let wartosc_od_do x y = {
+    lewa = x; 
+    prawa = y; 
+    czyodwrocony = false; 
+    czypusty = false
+};;
 
-let wartosc_dokladna x =
-    {lewa = x; prawa = x; czyodwrocony = false; czypusty = false}
-;;
+let wartosc_dokladna x = {
+    lewa = x; 
+    prawa = x; 
+    czyodwrocony = false; 
+    czypusty = false
+};;
+
+
+let negacja temp = {
+    lewa = temp.prawa *. -1.;
+    prawa = temp.lewa *. -1.;
+    czyodwrocony = temp.czyodwrocony;
+    czypusty = temp.czypusty
+};;
+
 
 
 let in_wartosc w x =
@@ -23,8 +41,11 @@ let in_wartosc w x =
     then
 	false
     else if w.czyodwrocony
-    then
-        (x <= (w.lewa)) || ((w.prawa) <= x)
+    then if w.lewa >= w.prawa
+	then
+	    true
+	else 
+	    (x <= (w.lewa)) || ((w.prawa) <= x)
     else
         ((w.lewa) <= x) && (x <= (w.prawa))
 ;;
@@ -59,7 +80,7 @@ let sr_wartosc w =
     then
         nan
     else
-        (min_wartosc w +. max_wartosc w) /. 2.0
+        (min_wartosc w +. max_wartosc w) /. 2.
 ;;
 
 
@@ -80,4 +101,8 @@ let plus a b =
 	    {lewa = b.lewa +. a.prawa; prawa = b.prawa +. a.lewa; czyodwrocony = true; czypusty = false}
 	else
 	    {lewa = a.lewa +. b.lewa; prawa = a.prawa +. b.prawa; czyodwrocony = false; czypusty = false}
+;;
+
+let minus a b =
+    plus a (negacja b)
 ;;
