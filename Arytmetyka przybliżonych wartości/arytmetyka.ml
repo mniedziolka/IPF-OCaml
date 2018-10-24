@@ -106,3 +106,21 @@ let plus a b =
 let minus a b =
     plus a (negacja b)
 ;;
+
+let razy a b =
+    if a.czypusty || b.czypusty
+    then
+        nan
+    else if a.czyodwrocony
+    then
+        if b.czyodwrocony
+        then
+            {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = false}
+        else if float_abs(b.lewa)
+        then
+
+        else
+    else
+        {lewa = a.lewa *. b.lewa; prawa = a.prawa *. b.prawa; czyodwrocony = false; czypusty = false}
+
+;;
