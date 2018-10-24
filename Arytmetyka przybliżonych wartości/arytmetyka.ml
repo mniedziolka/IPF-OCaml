@@ -1,28 +1,39 @@
-type wartosc = {lewa : float; prawa : float; czyodwrocony : bool};; 
+type wartosc = {
+    lewa : float; 
+    prawa : float; 
+    czyodwrocony : bool; 
+    czypusty : bool;
+}
 
 let wartosc_dokladnosc x p =
-    {lewa = x *. (1. -. p /. 100.); prawa = x *. (1. +. p /. 100.); czyodwrocony = false}
+    {lewa = x *. (1. -. p /. 100.); prawa = x *. (1. +. p /. 100.); czyodwrocony = false; czypusty = false}
 ;;
 
-let wartosc_od_do x y = 
-    {lewa = x; prawa = y; czyodwrocony = false}
+let wartosc_od_do x y =
+    {lewa = x; prawa = y; czyodwrocony = false; czypusty = false}
 ;;
 
-let wartosc_dokladna x = 
-    {lewa = x; prawa = x; czyodwrocony = false}
+let wartosc_dokladna x =
+    {lewa = x; prawa = x; czyodwrocony = false; czypusty = false}
 ;;
 
 
-let in_wartosc w x = 
-    if w.czyodwrocony 
+let in_wartosc w x =
+    if w.czypusty
     then
-        (x < (w.lewa)) || ((w.prawa) < x)
+	false
+    else if w.czyodwrocony
+    then
+        (x <= (w.lewa)) || ((w.prawa) <= x)
     else
-        ((w.lewa) < x) && (x < (w.prawa))
+        ((w.lewa) <= x) && (x <= (w.prawa))
 ;;
 
-let min_wartosc w = 
-    if w.czyodwrocony
+let min_wartosc w =
+    if w.czypusty
+    then
+	nan
+    else if w.czyodwrocony
     then
         neg_infinity
     else
@@ -30,15 +41,21 @@ let min_wartosc w =
 ;;
 
 let max_wartosc w =
-    if w.czyodwrocony
+    if w.czypusty
     then
-        infinity        
+	nan
+    else if w.czyodwrocony
+    then
+        infinity
     else
         w.prawa
 ;;
 
 let sr_wartosc w =
-    if w.czyodwrocony
+    if w.czypusty
+    then
+	nan
+    else if w.czyodwrocony
     then
         nan
     else
@@ -47,12 +64,20 @@ let sr_wartosc w =
 
 
 let plus a b =
-    if a.
-    if a.czyodwrocony
-    then 
+    if a.czypusty || b.czypusty
+    then
+	{lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = true}
+    else if a.czyodwrocony
+    then
         if b.czyodwrocony
         then
-            {lewa = neg_infinity; prawa = infinity; czyodwrocony = false}
+            {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = false}
         else
-            {lewa = a.lewa + b.prawa; prawa = }
+            {lewa = a.lewa +. b.prawa; prawa = a.prawa +. b.lewa; czyodwrocony = true; czypusty = false}
+    else
+	if b.czyodwrocony
+	then
+	    {lewa = b.lewa +. a.prawa; prawa = b.prawa +. a.lewa; czyodwrocony = true; czypusty = false}
+	else
+	    {lewa = a.lewa +. b.lewa; prawa = a.prawa +. b.prawa; czyodwrocony = false; czypusty = false}
 ;;
