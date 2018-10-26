@@ -1,3 +1,5 @@
+(* --------KONSTRUKTORY-------- *)
+
 type wartosc = {
     lewa : float; 
     prawa : float; 
@@ -35,7 +37,7 @@ let negacja temp = {
 };;
 
 
-
+(* --------SELEKTORY-------- *)
 let in_wartosc w x =
     if w.czypusty
     then
@@ -83,7 +85,7 @@ let sr_wartosc w =
         (min_wartosc w +. max_wartosc w) /. 2.
 ;;
 
-
+(* --------MODYFIKATORY-------- *)
 let plus a b =
     if a.czypusty || b.czypusty
     then
@@ -144,11 +146,38 @@ let razy a b =
         then
             pomnoz_odwrocony_normalny b a
         else
-            {lewa = min4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa); 
-            prawa = max4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa); 
-            czyodwrocony = false; czypusty = false}
+            {
+                lewa = min4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa); 
+                prawa = max4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa); 
+                czyodwrocony = false; czypusty = false
+            }
 ;;
 
-let odwotnosc a = 
-    
+let odwrotnosc a = 
+    if in_wartosc a 0.
+    then
+
+    else
+        if a.czyodwrocony 
+        then 
+            {
+                lewa = 1 /. a.lewa;
+                prawa = 1 /. b.prawa;
+                czyodwrocony = true;
+                czypusty = false
+            } 
+        else
+            {
+                lewa = 1 /. a.prawa;
+                prawa = 1 /. b.lewa;
+                czyodwrocony = false;
+                czypusty = false
+            }
+;;
+
+let podzielic a b = 
+    if a.czypusty || b.czypusty
+    then {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = true}
+    else
+        razy a (odwrotnosc b)
 ;;
