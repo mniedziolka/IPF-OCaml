@@ -107,20 +107,48 @@ let minus a b =
     plus a (negacja b)
 ;;
 
+let pomnoz_odwrocony_normalny a b = {
+    lewa = max (a.lewa *. b.lewa) (a.lewa *. b.prawa);
+    prawa = min (a.prawa *. b.lewa) (a.prawa *. b.prawa);
+    czyodwrocony = true; czypusty = false
+};;
+
+let scal a b = {
+    lewa = max a.lewa b.lewa;
+    prawa = min a.prawa b.prawa;
+    czyodwrocony = true;
+    czypusty = false
+};;
+
+let min4 a b c d =
+    min (min a b) (min c d)
+;;
+
+let max4 a b c d =
+    max (max a  b) (max c d)
+;;
+
 let razy a b =
     if a.czypusty || b.czypusty
     then
-        nan
+        {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = true}
     else if a.czyodwrocony
     then
         if b.czyodwrocony
         then
-            {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = false}
-        else if float_abs(b.lewa)
-        then
-
+            scal (pomnoz_odwrocony_normalny a b) (pomnoz_odwrocony_normalny b a)
         else
+            pomnoz_odwrocony_normalny a b
     else
-        {lewa = a.lewa *. b.lewa; prawa = a.prawa *. b.prawa; czyodwrocony = false; czypusty = false}
+        if b.czyodwrocony
+        then
+            pomnoz_odwrocony_normalny b a
+        else
+            {lewa = min4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa); 
+            prawa = max4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa); 
+            czyodwrocony = false; czypusty = false}
+;;
 
+let odwotnosc a = 
+    
 ;;
