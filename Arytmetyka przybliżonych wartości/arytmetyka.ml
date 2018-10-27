@@ -7,19 +7,16 @@ type wartosc = {
     czypusty : bool;
 }
 
-let wartosc_dokladnosc x p = {
-    lewa = x *. (1. -. p /. 100.); 
-    prawa = x *. (1. +. p /. 100.); 
-    czyodwrocony = false; 
-    czypusty = false
-};;
-
 let wartosc_od_do x y = {
     lewa = x; 
     prawa = y; 
     czyodwrocony = false; 
     czypusty = false
 };;
+
+let wartosc_dokladnosc x p = 
+    wartosc_od_do (x -. abs_float (x *. p /. 100.)) (x +. abs_float (x *. p /. 100.))
+;;
 
 let wartosc_dokladna x = {
     lewa = x; 
@@ -103,22 +100,6 @@ let pomnoz_odwrocony_normalny a b = {
     prawa = min (a.prawa *. b.lewa) (a.prawa *. b.prawa);
     czyodwrocony = true; czypusty = false
 };;
-
-(* let scal a b = 
-    if a.czyodwrocony
-    then
-        if b.czyodwrocony
-        then
-            {
-                lewa = max a.lewa b.lewa;
-                prawa = min a.lewa b.lewa;
-                czyodwrocony = true;
-                czypusty = false;
-            }
-        else
-
-    else 
-;; *)
 
 let eps = 0.00001;;
 
@@ -217,7 +198,7 @@ let razy a b =
 ;;
 
 let podzielic a b = 
-    if a.czypusty || b.czypusty || (okolo a.lewa 0 && okolo a.prawa 0) || (okolo b.lewa 0 && okolo b.prawa 0)
+    if a.czypusty || b.czypusty || (okolo a.lewa 0. && okolo a.prawa 0.) || (okolo b.lewa 0. && okolo b.prawa 0.)
     then pusty
     else
         razy a (odwrotnosc b)
