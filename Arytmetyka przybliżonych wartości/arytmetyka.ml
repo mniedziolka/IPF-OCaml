@@ -1,4 +1,4 @@
-(* --------KONSTRUKTORY-------- *)
+(* --------TYP-------- *)
 
 type wartosc = {
     lewa : float; 
@@ -7,6 +7,53 @@ type wartosc = {
     czypusty : bool;
 }
 
+(* --------POMOCNICZE------- *)
+
+let min4 a b c d =
+    min (min a b) (min c d)
+;;
+
+let max4 a b c d =
+    max (max a  b) (max c d)
+;;
+
+let pomnoz_odwrocony_normalny a b = 
+    if b.lewa <= 0. && b.prawa <= 0.
+    then
+        {
+            lewa = a.prawa *. b.prawa;
+            prawa = a.lewa *. b.prawa;
+            czyodwrocony = true; czypusty = false
+        }     
+    else if b.lewa <= 0. && b.prawa >= 0.
+        then
+            {lewa = 1.; prawa = -1.; czyodwrocony = true; czypusty = false}   
+        else
+            {
+                lewa = a.lewa *. b.lewa;
+                prawa = a.prawa *. b.lewa;
+                czyodwrocony = true; czypusty = false
+            }
+;;
+
+let eps = 0.0000001;;
+
+let okolo w x = 
+    (w +. eps > x) && (w -. eps < x)
+;;
+
+let negacja temp = {
+    lewa = temp.prawa *. -1.;
+    prawa = temp.lewa *. -1.;
+    czyodwrocony = temp.czyodwrocony;
+    czypusty = temp.czypusty
+};;
+
+let pusty = {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = true}
+
+
+
+(* --------KONSTRUKTORY-------- *)
 let wartosc_od_do x y = {
     lewa = x; 
     prawa = y; 
@@ -26,17 +73,6 @@ let wartosc_dokladna x = {
 };;
 
 
-let negacja temp = {
-    lewa = temp.prawa *. -1.;
-    prawa = temp.lewa *. -1.;
-    czyodwrocony = temp.czyodwrocony;
-    czypusty = temp.czypusty
-};;
-
-let pusty = {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = true}
-
-
-
 (* --------SELEKTORY-------- *)
 let in_wartosc w x =
     if w.czypusty
@@ -44,12 +80,12 @@ let in_wartosc w x =
 	false
     else if w.czyodwrocony
     then if w.lewa >= w.prawa
-	then
-	    true
-	else 
-	    (x <= (w.lewa)) || ((w.prawa) <= x)
+        then
+            true
+        else 
+            (x <= (w.lewa)) || ((w.prawa) <= x)
     else
-        ((w.lewa) <= x) && (x <= (w.prawa))
+        (((w.lewa) < x) && (x < (w.prawa)) || okolo w.lewa x || okolo w.prawa x)
 ;;
 
 let min_wartosc w =
@@ -85,63 +121,6 @@ let sr_wartosc w =
         (min_wartosc w +. max_wartosc w) /. 2.
 ;;
 
-(* --------POMOCNICZE------- *)
-
-let min4 a b c d =
-    min (min a b) (min c d)
-;;
-
-let max4 a b c d =
-    max (max a  b) (max c d)
-;;
-
-let pomnoz_odwrocony_normalny a b = {
-    lewa = max (a.lewa *. b.lewa) (a.lewa *. b.prawa);
-    prawa = min (a.prawa *. b.lewa) (a.prawa *. b.prawa);
-    czyodwrocony = true; czypusty = false
-};;
-
-let eps = 0.00001;;
-
-let okolo w x = 
-    (w +. eps > x) && (w -. eps < x)
-;;
-
-let odwrotnosc a = 
-    if in_wartosc a 0.
-    then
-        if a.czyodwrocony
-        then 
-            if a.lewa >= a.prawa
-            then a
-            else if okolo a.lewa 0.
-            then
-                {lewa = neg_infinity; prawa = 1. /. a.prawa; czyodwrocony = false; czypusty = false}
-            else if okolo a.prawa 0.
-            then
-                {lewa = 1. /. a.lewa; prawa = infinity; czyodwrocony = false; czypusty = false}
-            else
-                (* jeśli lewa > prawej i odwrócony to -neginf + neginf *)
-                {lewa = 12.; prawa = 10.; czyodwrocony = true; czypusty = false} 
-        else
-            if okolo a.lewa 0.
-            then 
-                {lewa = 1. /. a.prawa; prawa = infinity; czyodwrocony = false; czypusty = false}
-            else if okolo a.prawa 0.
-            then 
-                {lewa = neg_infinity; prawa = 1. /. a.prawa; czyodwrocony = false; czypusty = false} 
-            else
-                {lewa = 1. /. a.lewa; prawa = 1. /. a.prawa; czyodwrocony = true; czypusty = false}
-    else
-        {
-            (* czy tu nie powinno być na odwrót? min z maxem *)
-            lewa = min (1. /. a.lewa) (1. /. a.prawa); 
-            prawa = min (1. /. a.lewa) (1. /. a.prawa);
-            czyodwrocony = true;
-            czypusty = false
-        }
-;;
-
 (* --------MODYFIKATORY-------- *)
 let plus a b =
     if a.czypusty || b.czypusty
@@ -173,33 +152,65 @@ let razy a b =
         wartosc_dokladna 0.
     else if a.czyodwrocony
         then if b.czyodwrocony
-            then if a.lewa > 0. || b.lewa > 0. || a.prawa < 0. || b.prawa < 0.
-            then
-                {lewa = 1.; prawa = -1.; czyodwrocony = true; czypusty = false}
-            else
-                {
-                    lewa = max (a.lewa *. b.prawa) (b.lewa *. a.prawa);
-                    prawa = min (a.lewa *. b.lewa) (a.prawa *. b.prawa);
-                    czyodwrocony = true;
-                    czypusty = false
-                }
-        else
-            pomnoz_odwrocony_normalny a b
-    else if b.czyodwrocony
-    then
-        pomnoz_odwrocony_normalny b a
-    else {
-        lewa = min4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa);
-        prawa = max4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa);
-        czyodwrocony = false;
-        czypusty = false
-    }
+                then if (a.lewa > 0. || a.prawa < 0.) && (b.lewa > 0. || b.prawa < 0.) (* i czy lub *)
+                then
+                    {lewa = 2.; prawa = -2.; czyodwrocony = true; czypusty = false}
+                else
+                    {
+                        lewa = max (a.lewa *. b.prawa) (b.lewa *. a.prawa);
+                        prawa = min (a.lewa *. b.lewa) (a.prawa *. b.prawa);
+                        czyodwrocony = true;
+                        czypusty = false
+                    }
+            else pomnoz_odwrocony_normalny a b
+        else if b.czyodwrocony
+        then pomnoz_odwrocony_normalny b a
+        else {
+            lewa = min4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa);
+            prawa = max4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa);
+            czyodwrocony = false;
+            czypusty = false
+        }
 
+;;
+
+let odwrotnosc a = 
+    if in_wartosc a 0.
+    then
+        if a.czyodwrocony
+        then 
+            if a.lewa >= a.prawa
+            then a
+            else if okolo a.lewa 0.
+            then
+                {lewa = neg_infinity; prawa = 1. /. a.prawa; czyodwrocony = false; czypusty = false}
+            else if okolo a.prawa 0.
+            then
+                {lewa = 1. /. a.lewa; prawa = infinity; czyodwrocony = false; czypusty = false}
+            else
+                {lewa = 12.; prawa = 10.; czyodwrocony = true; czypusty = false} 
+        else
+            if okolo a.lewa 0.
+            then 
+                {lewa = 1. /. a.prawa; prawa = infinity; czyodwrocony = false; czypusty = false}
+            else if okolo a.prawa 0.
+            then 
+                {lewa = neg_infinity; prawa = 1. /. a.lewa; czyodwrocony = false; czypusty = false} 
+            else
+                {lewa = 1. /. a.lewa; prawa = 1. /. a.prawa; czyodwrocony = true; czypusty = false}
+    else
+        {
+            lewa = min (1. /. a.lewa) (1. /. a.prawa); 
+            prawa = min (1. /. a.lewa) (1. /. a.prawa);
+            czyodwrocony = true;
+            czypusty = false
+        }
 ;;
 
 let podzielic a b = 
     if a.czypusty || b.czypusty || (okolo a.lewa 0. && okolo a.prawa 0.) || (okolo b.lewa 0. && okolo b.prawa 0.)
-    then pusty
+    then
+        pusty
     else
         razy a (odwrotnosc b)
 ;;
