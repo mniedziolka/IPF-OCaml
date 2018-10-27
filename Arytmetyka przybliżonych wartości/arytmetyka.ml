@@ -85,33 +85,19 @@ let sr_wartosc w =
         (min_wartosc w +. max_wartosc w) /. 2.
 ;;
 
-(* --------MODYFIKATORY-------- *)
-let plus a b =
-    if a.czypusty || b.czypusty
-    then
-	{lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = true}
-    else if a.czyodwrocony
-    then
-        if b.czyodwrocony
-        then
-            {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = false}
-        else
-            {lewa = a.lewa +. b.prawa; prawa = a.prawa +. b.lewa; czyodwrocony = true; czypusty = false}
-    else
-	if b.czyodwrocony
-	then
-	    {lewa = b.lewa +. a.prawa; prawa = b.prawa +. a.lewa; czyodwrocony = true; czypusty = false}
-	else
-	    {lewa = a.lewa +. b.lewa; prawa = a.prawa +. b.prawa; czyodwrocony = false; czypusty = false}
+(* --------POMOCNICZE------- *)
+
+let min4 a b c d =
+    min (min a b) (min c d)
 ;;
 
-let minus a b =
-    plus a (negacja b)
+let max4 a b c d =
+    max (max a  b) (max c d)
 ;;
 
 let pomnoz_odwrocony_normalny a b = {
-    lewa = max (a.lewa *. b.lewa) (a.lewa *. b.prawa);
-    prawa = min (a.prawa *. b.lewa) (a.prawa *. b.prawa);
+    lewa = max4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa);
+    prawa = min4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa);
     czyodwrocony = true; czypusty = false
 };;
 
@@ -122,46 +108,11 @@ let scal a b = {
     czypusty = false
 };;
 
-let min4 a b c d =
-    min (min a b) (min c d)
-;;
-
-let max4 a b c d =
-    max (max a  b) (max c d)
-;;
-
 let eps = 0.00001;;
 
 let okolo w x = 
     (w +. eps > x) && (w -. eps < x)
 ;;
-
-let razy a b =
-    if a.czypusty || b.czypusty
-    then
-        {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = true}
-    else if ((okolo a.lewa 0.) && (okolo a.prawa 0.)) || ((okolo b.lewa 0.) && (okolo b.prawa 0.))
-    then
-        wartosc_dokladna 0.
-    else if a.czyodwrocony
-    then
-        if b.czyodwrocony
-        then
-            scal (pomnoz_odwrocony_normalny a b) (pomnoz_odwrocony_normalny b a)
-        else
-            pomnoz_odwrocony_normalny a b
-    else
-        if b.czyodwrocony
-        then
-            pomnoz_odwrocony_normalny b a
-        else
-            {
-                lewa = min4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa); 
-                prawa = max4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa); 
-                czyodwrocony = false; czypusty = false
-            }
-;;
-
 
 let odwrotnosc a = 
     if in_wartosc a 0.
@@ -196,6 +147,56 @@ let odwrotnosc a =
             czyodwrocony = true;
             czypusty = false
         }
+;;
+
+(* --------MODYFIKATORY-------- *)
+let plus a b =
+    if a.czypusty || b.czypusty
+    then
+	{lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = true}
+    else if a.czyodwrocony
+    then
+        if b.czyodwrocony
+        then
+            {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = false}
+        else
+            {lewa = a.lewa +. b.prawa; prawa = a.prawa +. b.lewa; czyodwrocony = true; czypusty = false}
+    else
+	if b.czyodwrocony
+	then
+	    {lewa = b.lewa +. a.prawa; prawa = b.prawa +. a.lewa; czyodwrocony = true; czypusty = false}
+	else
+	    {lewa = a.lewa +. b.lewa; prawa = a.prawa +. b.prawa; czyodwrocony = false; czypusty = false}
+;;
+
+let minus a b =
+    plus a (negacja b)
+;;
+
+let razy a b =
+    if a.czypusty || b.czypusty
+    then
+        {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = true}
+    else if ((okolo a.lewa 0.) && (okolo a.prawa 0.)) || ((okolo b.lewa 0.) && (okolo b.prawa 0.))
+    then
+        wartosc_dokladna 0.
+    else if a.czyodwrocony
+    then
+        if b.czyodwrocony
+        then
+            scal (pomnoz_odwrocony_normalny a b) (pomnoz_odwrocony_normalny b a)
+        else
+            pomnoz_odwrocony_normalny a b
+    else
+        if b.czyodwrocony
+        then
+            pomnoz_odwrocony_normalny b a
+        else
+            {
+                lewa = min4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa); 
+                prawa = max4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa); 
+                czyodwrocony = false; czypusty = false
+            }
 ;;
 
 let podzielic a b = 
