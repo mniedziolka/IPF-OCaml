@@ -17,12 +17,19 @@ let max4 a b c d =
     max (max a  b) (max c d)
 ;;
 
+let mnozenie x y = 
+    if (x=neg_infinity || x=infinity) && y=0. then 0.
+    else if (y=neg_infinity || y=infinity) && x=0. then 0.
+
+    else x *. y
+;;
+
 let pomnoz_odwrocony_normalny a b = 
     if b.lewa <= 0. && b.prawa <= 0.
     then
         {
-            lewa = a.prawa *. b.prawa;
-            prawa = a.lewa *. b.prawa;
+            lewa = mnozenie a.prawa b.prawa;
+            prawa = mnozenie a.lewa b.prawa;
             czyodwrocony = true; czypusty = false
         }     
     else if b.lewa <= 0. && b.prawa >= 0.
@@ -30,8 +37,8 @@ let pomnoz_odwrocony_normalny a b =
             {lewa = 1.; prawa = -1.; czyodwrocony = true; czypusty = false}   
         else
             {
-                lewa = a.lewa *. b.lewa;
-                prawa = a.prawa *. b.lewa;
+                lewa = mnozenie a.lewa b.lewa;
+                prawa = mnozenie a.prawa b.lewa;
                 czyodwrocony = true; czypusty = false
             }
 ;;
@@ -62,7 +69,7 @@ let wartosc_od_do x y = {
 };;
 
 let wartosc_dokladnosc x p = 
-    wartosc_od_do (x -. abs_float (x *. p /. 100.)) (x +. abs_float (x *. p /. 100.))
+    wartosc_od_do (x -. abs_float (mnozenie x p /. 100.)) (x +. abs_float (mnozenie x p /. 100.))
 ;;
 
 let wartosc_dokladna x = {
@@ -157,8 +164,8 @@ let razy a b =
                     {lewa = 2.; prawa = -2.; czyodwrocony = true; czypusty = false}
                 else
                     {
-                        lewa = max (a.lewa *. b.prawa) (b.lewa *. a.prawa);
-                        prawa = min (a.lewa *. b.lewa) (a.prawa *. b.prawa);
+                        lewa = max (mnozenie a.lewa b.prawa) (mnozenie b.lewa a.prawa);
+                        prawa = min (mnozenie a.lewa b.lewa) (mnozenie a.prawa b.prawa);
                         czyodwrocony = true;
                         czypusty = false
                     }
@@ -166,8 +173,8 @@ let razy a b =
         else if b.czyodwrocony
         then pomnoz_odwrocony_normalny b a
         else {
-            lewa = min4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa);
-            prawa = max4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa);
+            lewa = min4 (mnozenie a.lewa b.lewa) (mnozenie a.lewa b.prawa) (mnozenie a.prawa b.lewa) (mnozenie a.prawa b.prawa);
+            prawa = max4 (mnozenie a.lewa b.lewa) (mnozenie a.lewa b.prawa) (mnozenie a.prawa b.lewa) (mnozenie a.prawa b.prawa);
             czyodwrocony = false;
             czypusty = false
         }
@@ -188,9 +195,11 @@ let odwrotnosc a =
             then
                 {lewa = 1. /. a.lewa; prawa = infinity; czyodwrocony = false; czypusty = false}
             else
-                {lewa = 12.; prawa = 10.; czyodwrocony = true; czypusty = false} 
+                {lewa = 1. /. a.prawa; prawa = 1. /. a.lewa; czyodwrocony = true; czypusty = false} 
         else
-            if okolo a.lewa 0.
+            if a.lewa = neg_infinity && a.prawa = infinity
+            then a
+            else if okolo a.lewa 0.
             then 
                 {lewa = 1. /. a.prawa; prawa = infinity; czyodwrocony = false; czypusty = false}
             else if okolo a.prawa 0.
@@ -200,9 +209,9 @@ let odwrotnosc a =
                 {lewa = 1. /. a.lewa; prawa = 1. /. a.prawa; czyodwrocony = true; czypusty = false}
     else
         {
-            lewa = min (1. /. a.lewa) (1. /. a.prawa); 
-            prawa = min (1. /. a.lewa) (1. /. a.prawa);
-            czyodwrocony = true;
+            lewa = (1. /. a.prawa); 
+            prawa = (1. /. a.lewa);
+            czyodwrocony = false;
             czypusty = false
         }
 ;;
