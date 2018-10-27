@@ -130,10 +130,19 @@ let max4 a b c d =
     max (max a  b) (max c d)
 ;;
 
+let eps = 0.00001;;
+
+let okolo w x = 
+    (w +. eps > x) && (w -. eps < x)
+;;
+
 let razy a b =
     if a.czypusty || b.czypusty
     then
         {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = true}
+    else if ((okolo a.lewa 0.) && (okolo a.prawa 0.)) || ((okolo b.lewa 0.) && (okolo b.prawa 0.))
+    then
+        wartosc_dokladna 0.
     else if a.czyodwrocony
     then
         if b.czyodwrocony
@@ -153,26 +162,40 @@ let razy a b =
             }
 ;;
 
+
 let odwrotnosc a = 
     if in_wartosc a 0.
     then
-
-    else
-        if a.czyodwrocony 
+        if a.czyodwrocony
         then 
-            {
-                lewa = 1 /. a.lewa;
-                prawa = 1 /. b.prawa;
-                czyodwrocony = true;
-                czypusty = false
-            } 
+            if a.lewa >= a.prawa
+            then a
+            else if okolo a.lewa 0.
+            then
+                {lewa = neg_infinity; prawa = 1. /. a.prawa; czyodwrocony = false; czypusty = false}
+            else if okolo a.prawa 0.
+            then
+                {lewa = 1. /. a.lewa; prawa = infinity; czyodwrocony = false; czypusty = false}
+            else
+                (* jeśli lewa > prawej i odwrócony to -neginf + neginf *)
+                {lewa = 12.; prawa = 10.; czyodwrocony = true; czypusty = false} 
         else
-            {
-                lewa = 1 /. a.prawa;
-                prawa = 1 /. b.lewa;
-                czyodwrocony = false;
-                czypusty = false
-            }
+            if okolo a.lewa 0.
+            then 
+                {lewa = 1. /. a.prawa; prawa = infinity; czyodwrocony = false; czypusty = false}
+            else if okolo a.prawa 0.
+            then 
+                {lewa = neg_infinity; prawa = 1. /. a.prawa; czyodwrocony = false; czypusty = false} 
+            else
+                {lewa = 1. /. a.lewa; prawa = 1. /. a.prawa; czyodwrocony = true; czypusty = false}
+    else
+        {
+            (* czy tu nie powinno być na odwrót? min z maxem *)
+            lewa = min (1. /. a.lewa) (1. /. a.prawa); 
+            prawa = min (1. /. a.lewa) (1. /. a.prawa);
+            czyodwrocony = true;
+            czypusty = false
+        }
 ;;
 
 let podzielic a b = 
