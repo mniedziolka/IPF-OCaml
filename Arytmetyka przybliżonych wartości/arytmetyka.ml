@@ -36,6 +36,9 @@ let negacja temp = {
     czypusty = temp.czypusty
 };;
 
+let pusty = {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = true}
+
+
 
 (* --------SELEKTORY-------- *)
 let in_wartosc w x =
@@ -96,17 +99,26 @@ let max4 a b c d =
 ;;
 
 let pomnoz_odwrocony_normalny a b = {
-    lewa = max4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa);
-    prawa = min4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa);
+    lewa = max (a.lewa *. b.lewa) (a.lewa *. b.prawa);
+    prawa = min (a.prawa *. b.lewa) (a.prawa *. b.prawa);
     czyodwrocony = true; czypusty = false
 };;
 
-let scal a b = {
-    lewa = max a.lewa b.lewa;
-    prawa = min a.prawa b.prawa;
-    czyodwrocony = true;
-    czypusty = false
-};;
+(* let scal a b = 
+    if a.czyodwrocony
+    then
+        if b.czyodwrocony
+        then
+            {
+                lewa = max a.lewa b.lewa;
+                prawa = min a.lewa b.lewa;
+                czyodwrocony = true;
+                czypusty = false;
+            }
+        else
+
+    else 
+;; *)
 
 let eps = 0.00001;;
 
@@ -152,13 +164,12 @@ let odwrotnosc a =
 (* --------MODYFIKATORY-------- *)
 let plus a b =
     if a.czypusty || b.czypusty
-    then
-	{lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = true}
+    then pusty
     else if a.czyodwrocony
     then
         if b.czyodwrocony
         then
-            {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = false}
+            {lewa = 1.; prawa = -1.; czyodwrocony = true; czypusty = false}
         else
             {lewa = a.lewa +. b.prawa; prawa = a.prawa +. b.lewa; czyodwrocony = true; czypusty = false}
     else
@@ -175,33 +186,39 @@ let minus a b =
 
 let razy a b =
     if a.czypusty || b.czypusty
-    then
-        {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = true}
-    else if ((okolo a.lewa 0.) && (okolo a.prawa 0.)) || ((okolo b.lewa 0.) && (okolo b.prawa 0.))
+    then pusty
+    else if (okolo a.lewa 0. && okolo a.prawa 0.) || (okolo b.lewa 0. && okolo b.prawa 0.)
     then
         wartosc_dokladna 0.
     else if a.czyodwrocony
-    then
-        if b.czyodwrocony
-        then
-            scal (pomnoz_odwrocony_normalny a b) (pomnoz_odwrocony_normalny b a)
+        then if b.czyodwrocony
+            then if a.lewa > 0. || b.lewa > 0. || a.prawa < 0. || b.prawa < 0.
+            then
+                {lewa = 1.; prawa = -1.; czyodwrocony = true; czypusty = false}
+            else
+                {
+                    lewa = max (a.lewa *. b.prawa) (b.lewa *. a.prawa);
+                    prawa = min (a.lewa *. b.lewa) (a.prawa *. b.prawa);
+                    czyodwrocony = true;
+                    czypusty = false
+                }
         else
             pomnoz_odwrocony_normalny a b
-    else
-        if b.czyodwrocony
-        then
-            pomnoz_odwrocony_normalny b a
-        else
-            {
-                lewa = min4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa); 
-                prawa = max4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa); 
-                czyodwrocony = false; czypusty = false
-            }
+    else if b.czyodwrocony
+    then
+        pomnoz_odwrocony_normalny b a
+    else {
+        lewa = min4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa);
+        prawa = max4 (a.lewa *. b.lewa) (a.lewa *. b.prawa) (a.prawa *. b.lewa) (a.prawa *. b.prawa);
+        czyodwrocony = false;
+        czypusty = false
+    }
+
 ;;
 
 let podzielic a b = 
-    if a.czypusty || b.czypusty
-    then {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = true}
+    if a.czypusty || b.czypusty || (okolo a.lewa 0 && okolo a.prawa 0) || (okolo b.lewa 0 && okolo b.prawa 0)
+    then pusty
     else
         razy a (odwrotnosc b)
 ;;
