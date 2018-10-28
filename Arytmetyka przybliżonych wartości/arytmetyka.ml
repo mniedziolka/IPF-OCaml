@@ -9,6 +9,8 @@ type wartosc = {
 
 (* --------POMOCNICZE------- *)
 
+
+
 let min4 a b c d =
     min (min a b) (min c d)
 ;;
@@ -58,7 +60,13 @@ let negacja temp = {
 
 let pusty = {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = true}
 
+let nieskonczony = {lewa = neg_infinity; prawa = infinity; czyodwrocony = false; czypusty = false}
 
+let sprawdz x = 
+    if x.czyodwrocony = true
+    then if x.lewa >= x.prawa then nieskonczony else x
+    else x
+;;
 
 (* --------KONSTRUKTORY-------- *)
 let wartosc_od_do x y = {
@@ -129,7 +137,7 @@ let sr_wartosc w =
 ;;
 
 (* --------MODYFIKATORY-------- *)
-let plus a b =
+let plus_sprawdzone a b =
     if a.czypusty || b.czypusty
     then pusty
     else if a.czyodwrocony
@@ -147,11 +155,11 @@ let plus a b =
 	    {lewa = a.lewa +. b.lewa; prawa = a.prawa +. b.prawa; czyodwrocony = false; czypusty = false}
 ;;
 
-let minus a b =
-    plus a (negacja b)
+let minus_sprawdzone a b =
+    plus_sprawdzone a (sprawdz (negacja b))
 ;;
 
-let razy a b =
+let razy_sprawdzone a b =
     if a.czypusty || b.czypusty
     then pusty
     else if (okolo a.lewa 0. && okolo a.prawa 0.) || (okolo b.lewa 0. && okolo b.prawa 0.)
@@ -159,7 +167,7 @@ let razy a b =
         wartosc_dokladna 0.
     else if a.czyodwrocony
         then if b.czyodwrocony
-                then if (a.lewa > 0. || a.prawa < 0.) && (b.lewa > 0. || b.prawa < 0.) (* i czy lub *)
+                then if (a.lewa > 0. || a.prawa < 0.) || (b.lewa > 0. || b.prawa < 0.) (* i czy lub *)
                 then
                     {lewa = 2.; prawa = -2.; czyodwrocony = true; czypusty = false}
                 else
@@ -187,7 +195,7 @@ let odwrotnosc a =
         if a.czyodwrocony
         then 
             if a.lewa >= a.prawa
-            then a
+            then {lewa = 2.; prawa = -2.; czyodwrocony = true; czypusty = false}
             else if okolo a.lewa 0.
             then
                 {lewa = neg_infinity; prawa = 1. /. a.prawa; czyodwrocony = false; czypusty = false}
@@ -216,10 +224,26 @@ let odwrotnosc a =
         }
 ;;
 
-let podzielic a b = 
-    if a.czypusty || b.czypusty || (okolo a.lewa 0. && okolo a.prawa 0.) || (okolo b.lewa 0. && okolo b.prawa 0.)
+let podzielic_sprawdzone a b = 
+    if a.czypusty || b.czypusty || (okolo b.lewa 0. && okolo b.prawa 0.)
     then
         pusty
     else
-        razy a (odwrotnosc b)
+        razy_sprawdzone a (sprawdz (odwrotnosc  b))
+;;
+
+let plus a b = 
+    plus_sprawdzone (sprawdz a) (sprawdz b)
+;;
+
+let minus a b =
+    minus_sprawdzone (sprawdz a) (sprawdz b)
+;;
+
+let razy a b =
+    razy_sprawdzone (sprawdz a) (sprawdz b)
+;;
+
+let podzielic a b =
+    podzielic_sprawdzone (sprawdz a) (sprawdz b)
 ;;
