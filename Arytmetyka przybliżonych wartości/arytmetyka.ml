@@ -9,7 +9,9 @@ type wartosc = {
 
 (* --------POMOCNICZE------- *)
 
+let pusty = {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = true}
 
+let nieskonczony = {lewa = neg_infinity; prawa = infinity; czyodwrocony = false; czypusty = false}
 
 let min4 a b c d =
     min (min a b) (min c d)
@@ -26,19 +28,25 @@ let mnozenie x y =
     else x *. y
 ;;
 
+let sprawdz x = 
+    if x.czyodwrocony = true
+    then if x.lewa >= x.prawa then nieskonczony else x
+    else x
+;;
+
 let pomnoz_odwrocony_normalny a b = 
     if b.lewa <= 0. && b.prawa <= 0.
     then
-        {
+        sprawdz {
             lewa = mnozenie a.prawa b.prawa;
             prawa = mnozenie a.lewa b.prawa;
             czyodwrocony = true; czypusty = false
         }     
     else if b.lewa <= 0. && b.prawa >= 0.
         then
-            {lewa = 1.; prawa = -1.; czyodwrocony = true; czypusty = false}   
+            nieskonczony 
         else
-            {
+            sprawdz {
                 lewa = mnozenie a.lewa b.lewa;
                 prawa = mnozenie a.prawa b.lewa;
                 czyodwrocony = true; czypusty = false
@@ -51,22 +59,12 @@ let okolo w x =
     (w +. eps > x) && (w -. eps < x)
 ;;
 
-let negacja temp = {
+let negacja temp = sprawdz {
     lewa = temp.prawa *. -1.;
     prawa = temp.lewa *. -1.;
     czyodwrocony = temp.czyodwrocony;
     czypusty = temp.czypusty
 };;
-
-let pusty = {lewa = neg_infinity; prawa = infinity; czyodwrocony = true; czypusty = true}
-
-let nieskonczony = {lewa = neg_infinity; prawa = infinity; czyodwrocony = false; czypusty = false}
-
-let sprawdz x = 
-    if x.czyodwrocony = true
-    then if x.lewa >= x.prawa then nieskonczony else x
-    else x
-;;
 
 (* --------KONSTRUKTORY-------- *)
 let wartosc_od_do x y = {
@@ -105,61 +103,52 @@ let in_wartosc w x =
 
 let min_wartosc w =
     if w.czypusty
-    then
-	nan
+    then nan
     else if w.czyodwrocony
-    then
-        neg_infinity
-    else
-        w.lewa
+    then neg_infinity
+    else w.lewa
 ;;
 
 let max_wartosc w =
     if w.czypusty
-    then
-	nan
+    then nan
     else if w.czyodwrocony
-    then
-        infinity
-    else
-        w.prawa
+    then infinity
+    else w.prawa
 ;;
 
 let sr_wartosc w =
     if w.czypusty
-    then
-	nan
+    then nan
     else if w.czyodwrocony
-    then
-        nan
-    else
-        (min_wartosc w +. max_wartosc w) /. 2.
+    then nan
+    else (min_wartosc w +. max_wartosc w) /. 2.
 ;;
 
 (* --------MODYFIKATORY-------- *)
-let plus_sprawdzone a b =
+let plus a b =
     if a.czypusty || b.czypusty
     then pusty
     else if a.czyodwrocony
     then
         if b.czyodwrocony
         then
-            {lewa = 1.; prawa = -1.; czyodwrocony = true; czypusty = false}
+            nieskonczony
         else
-            {lewa = a.lewa +. b.prawa; prawa = a.prawa +. b.lewa; czyodwrocony = true; czypusty = false}
+            sprawdz {lewa = a.lewa +. b.prawa; prawa = a.prawa +. b.lewa; czyodwrocony = true; czypusty = false}
     else
 	if b.czyodwrocony
 	then
-	    {lewa = b.lewa +. a.prawa; prawa = b.prawa +. a.lewa; czyodwrocony = true; czypusty = false}
+	    sprawdz {lewa = b.lewa +. a.prawa; prawa = b.prawa +. a.lewa; czyodwrocony = true; czypusty = false}
 	else
-	    {lewa = a.lewa +. b.lewa; prawa = a.prawa +. b.prawa; czyodwrocony = false; czypusty = false}
+	    sprawdz {lewa = a.lewa +. b.lewa; prawa = a.prawa +. b.prawa; czyodwrocony = false; czypusty = false}
 ;;
 
-let minus_sprawdzone a b =
-    plus_sprawdzone a (sprawdz (negacja b))
+let minus a b =
+    sprawdz (plus a (negacja b))
 ;;
 
-let razy_sprawdzone a b =
+let razy a b =
     if a.czypusty || b.czypusty
     then pusty
     else if (okolo a.lewa 0. && okolo a.prawa 0.) || (okolo b.lewa 0. && okolo b.prawa 0.)
@@ -169,9 +158,9 @@ let razy_sprawdzone a b =
         then if b.czyodwrocony
                 then if (a.lewa > 0. || a.prawa < 0.) || (b.lewa > 0. || b.prawa < 0.) (* i czy lub *)
                 then
-                    {lewa = 2.; prawa = -2.; czyodwrocony = true; czypusty = false}
+                    nieskonczony
                 else
-                    {
+                    sprawdz {
                         lewa = max (mnozenie a.lewa b.prawa) (mnozenie b.lewa a.prawa);
                         prawa = min (mnozenie a.lewa b.lewa) (mnozenie a.prawa b.prawa);
                         czyodwrocony = true;
@@ -180,7 +169,7 @@ let razy_sprawdzone a b =
             else pomnoz_odwrocony_normalny a b
         else if b.czyodwrocony
         then pomnoz_odwrocony_normalny b a
-        else {
+        else sprawdz {
             lewa = min4 (mnozenie a.lewa b.lewa) (mnozenie a.lewa b.prawa) (mnozenie a.prawa b.lewa) (mnozenie a.prawa b.prawa);
             prawa = max4 (mnozenie a.lewa b.lewa) (mnozenie a.lewa b.prawa) (mnozenie a.prawa b.lewa) (mnozenie a.prawa b.prawa);
             czyodwrocony = false;
@@ -195,28 +184,28 @@ let odwrotnosc a =
         if a.czyodwrocony
         then 
             if a.lewa >= a.prawa
-            then {lewa = 2.; prawa = -2.; czyodwrocony = true; czypusty = false}
+            then nieskonczony
             else if okolo a.lewa 0.
             then
-                {lewa = neg_infinity; prawa = 1. /. a.prawa; czyodwrocony = false; czypusty = false}
+                sprawdz {lewa = neg_infinity; prawa = 1. /. a.prawa; czyodwrocony = false; czypusty = false}
             else if okolo a.prawa 0.
             then
-                {lewa = 1. /. a.lewa; prawa = infinity; czyodwrocony = false; czypusty = false}
+                sprawdz {lewa = 1. /. a.lewa; prawa = infinity; czyodwrocony = false; czypusty = false}
             else
-                {lewa = 1. /. a.prawa; prawa = 1. /. a.lewa; czyodwrocony = true; czypusty = false} 
+                sprawdz {lewa = 1. /. a.prawa; prawa = 1. /. a.lewa; czyodwrocony = true; czypusty = false} 
         else
             if a.lewa = neg_infinity && a.prawa = infinity
-            then a
+            then nieskonczony
             else if okolo a.lewa 0.
             then 
-                {lewa = 1. /. a.prawa; prawa = infinity; czyodwrocony = false; czypusty = false}
+                sprawdz {lewa = 1. /. a.prawa; prawa = infinity; czyodwrocony = false; czypusty = false}
             else if okolo a.prawa 0.
             then 
-                {lewa = neg_infinity; prawa = 1. /. a.lewa; czyodwrocony = false; czypusty = false} 
+                sprawdz {lewa = neg_infinity; prawa = 1. /. a.lewa; czyodwrocony = false; czypusty = false} 
             else
-                {lewa = 1. /. a.lewa; prawa = 1. /. a.prawa; czyodwrocony = true; czypusty = false}
+                sprawdz {lewa = 1. /. a.lewa; prawa = 1. /. a.prawa; czyodwrocony = true; czypusty = false}
     else
-        {
+        sprawdz {
             lewa = (1. /. a.prawa); 
             prawa = (1. /. a.lewa);
             czyodwrocony = false;
@@ -224,26 +213,10 @@ let odwrotnosc a =
         }
 ;;
 
-let podzielic_sprawdzone a b = 
+let podzielic a b = 
     if a.czypusty || b.czypusty || (okolo b.lewa 0. && okolo b.prawa 0.)
     then
         pusty
     else
-        razy_sprawdzone a (sprawdz (odwrotnosc  b))
-;;
-
-let plus a b = 
-    plus_sprawdzone (sprawdz a) (sprawdz b)
-;;
-
-let minus a b =
-    minus_sprawdzone (sprawdz a) (sprawdz b)
-;;
-
-let razy a b =
-    razy_sprawdzone (sprawdz a) (sprawdz b)
-;;
-
-let podzielic a b =
-    podzielic_sprawdzone (sprawdz a) (sprawdz b)
+        sprawdz(razy a (odwrotnosc b))
 ;;
