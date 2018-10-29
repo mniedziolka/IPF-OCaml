@@ -1,4 +1,12 @@
+(* Arytmetyka przybliżonych wartości *)
+(* Autor: Michał Niedziółka *)
+(* Code review: Marcin Abramowicz *)
+
 (* --------TYP-------- *)
+
+(* lewa prawa -> końce przedziału *)
+(* czyodwrocony -> czy [a, b] czy [-inf, a] U [b, inf] *)
+(* czypusty -> czy nan *)
 
 type wartosc = {
     lewa : float; 
@@ -21,6 +29,7 @@ let max4 a b c d =
     max (max a  b) (max c d)
 ;;
 
+(* Mnożenie rozwiązujące 0 * infinity *)
 let mnozenie x y = 
     if (x=neg_infinity || x=infinity) && y=0. then 0.
     else if (y=neg_infinity || y=infinity) && x=0. then 0.
@@ -28,12 +37,14 @@ let mnozenie x y =
     else x *. y
 ;;
 
+(* Funkcja sprawdzająca czy zbiór jest zbiorem (-inf, inf) *)
 let sprawdz x = 
     if x.czyodwrocony = true
     then if x.lewa >= x.prawa then nieskonczony else x
     else x
 ;;
 
+(* Mnożenie przedziału odwróconego i nieodwróconego *)
 let pomnoz_odwrocony_normalny a b = 
     if b.lewa <= 0. && b.prawa <= 0.
     then
@@ -53,6 +64,7 @@ let pomnoz_odwrocony_normalny a b =
             }
 ;;
 
+(* Równość floatów *)
 let eps = 0.0000001;;
 
 let okolo w x = 
@@ -90,7 +102,7 @@ let wartosc_dokladna x = {
 let in_wartosc w x =
     if w.czypusty
     then
-	false
+	    false
     else if w.czyodwrocony
     then if w.lewa >= w.prawa
         then
