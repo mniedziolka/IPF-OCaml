@@ -65,7 +65,7 @@ let pomnoz_odwrocony_normalny a b =
 ;;
 
 (* Równość floatów *)
-let eps = 0.0000001;;
+let eps = 0.00000001;;
 
 let okolo w x = 
     (w +. eps > x) && (w -. eps < x)
@@ -108,9 +108,9 @@ let in_wartosc w x =
         then
             true
         else 
-            (x <= (w.lewa)) || ((w.prawa) <= x)
-    else
-        (((w.lewa) < x) && (x < (w.prawa)) || okolo w.lewa x || okolo w.prawa x)
+            (x <= (w.lewa)) || ((w.prawa) <= x) || okolo w.lewa x || okolo w.prawa x
+    else 
+        (((w.lewa) <= x) && (x <= (w.prawa)) || okolo w.lewa x || okolo w.prawa x)
 ;;
 
 let min_wartosc w =
