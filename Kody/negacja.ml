@@ -1,0 +1,1 @@
+let forall li p = not(exists li(nom p))
