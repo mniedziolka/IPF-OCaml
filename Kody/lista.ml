@@ -10,3 +10,7 @@ let rec budujogonowo n =
         in pom n []
 ;;
 
+let sum li = List.fold_left (+) 0 li;;
+let prod li = List.fold_left ( * ) 1 li;;
+
+let len li = List.fold_left (fun x _ -> x + 1) 0 li;;
