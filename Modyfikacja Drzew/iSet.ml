@@ -28,22 +28,18 @@ let count x =
   | Empty -> 0
 
 (* Sumuje liczby elementow, przy czym wynik nie przekracza max_int *)
-let maxsum x y = if x >= max_int + y then max_int else x + y
+let maxsum x y = if max_int - y <= x then max_int else x + y
 
 (* Zwraca liczbe elementow w przedziale (a, b) *)
+
 let elem_count (a, b) =
-  let neg_spec x = if x = min_int then max_int else -x in
-  if (a > 0 && b > 0) then b - a + 1
-  else if (a < 0 && b < 0) then
-    if a = min_int then maxsum (b + neg_spec a + 1) 1
-    else b - a + 1
-  else maxsum (maxsum (neg_spec a) b) 1
+  if b - a + 1 <= 0 then max_int
+  else b - a + 1
 
 (* Tworzy nowe drzewo z danego lewego, prawego poddrzewa i nowego korzenia *)
 (* Warunek poczatkowy: oba drzewa sa drzewami AVL, roznica wysokosci = 1, korzen do nich pasuje *)
-let make l k r =
-  let c = maxsum (maxsum (count l) (count r)) (elem_count k) in
-  Node (l, k, r, max (height l) (height r) + 1, c)
+let curr_c l k r = maxsum (maxsum (count l) (count r)) (elem_count k)
+let make l k r = Node (l, k, r, max (height l) (height r) + 1, (curr_c l k r))
 
 let make_leaf v = Node (Empty, v, Empty, 1, elem_count v)
 
