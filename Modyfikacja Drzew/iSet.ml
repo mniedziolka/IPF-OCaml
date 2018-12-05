@@ -2,7 +2,7 @@
 (* Autor: Michał Niedziółka *)
 (* Code review: Jakub Organa *)
 
-(* lewe poddrzewo * wartosc(przedzial) * prawe * wysokosc * liczba elementow *)
+(* lewe poddrzewo * przedzial * prawe * wysokosc * liczba elementow *)
 
 type interval = int * int
 type t = 
@@ -68,7 +68,7 @@ let rec max_elt = function
   | Empty -> raise Not_found
 
 let rec remove_max_elt = function
-  | Node (l,_,Empty,_,_) -> l
+    Node (l,_,Empty,_,_) -> l
   | Node (l,k,r,_,_) -> bal l k (remove_max_elt r)
   | Empty -> invalid_arg "PSet.remove_max_elt"
 
@@ -89,7 +89,7 @@ exception Invalid_args
 
 (* Dodaję do drzewa przedział który jest rozłączny z pozostałymi na drzewie *)
 let rec add_disjoint x = function
-  | Node (l, v, r, _, _) ->
+    Node (l, v, r, _, _) ->
     let c = fst(x) > snd(v) in
     if c then let node_right = add_disjoint x r 
       in bal l v node_right
@@ -101,7 +101,7 @@ let rec add_disjoint x = function
 (* join i cmp wzięty z pSet *)
 let rec join l v r =
   match (l, r) with
-    (Empty, _) -> add_disjoint v r
+     (Empty, _) -> add_disjoint v r
   | (_, Empty) -> add_disjoint v l
   | (Node(ll, lv, lr, lh, _), Node(rl, rv, rr, rh, _)) ->
       if lh > rh + 2 then bal ll lv (join lr v r) else
@@ -110,9 +110,9 @@ let rec join l v r =
 
 let cmp v x =
   match v with
-  (a, b) -> 
-    if x < a then max_int
-    else if x > b then min_int
+    (a, b) -> 
+    if x > b then max_int
+    else if x < a then min_int
     else 0
   | _ -> raise Invalid_args
 
@@ -131,7 +131,7 @@ let split x s =
   in loop x s
 
 (* Dodaje przedzial v do s*)
-(* let add v s =
+let add v s =
   if is_empty s then add_disjoint v s else
   let (left, _, _) = split (fst(v)) s and (_, _, right) = split (snd(v)) s in
   let (left, x) = 
@@ -150,29 +150,7 @@ let split x s =
       in if snd(v) = begin_right - 1 
       then (remove_min_elt right, end_right)
       else (right, snd(v))
-  in join left (x, y) right *)
-
-let add (x, y) s =
-  if is_empty s then add_disjoint (x, y) s else
-  let (left, _, _) = split x s in
-  let (_, _, right) = split y s in
-
-  let (left, a) =
-    if left = empty then (left, x)
-    else
-      let (pl, kl) = max_elt left in
-      if x = kl + 1 then (remove_max_elt left, pl)
-      else (left, x)
-  in
-
-  let (right, b) =
-    if right = empty then (right, y)
-    else
-      let (pr, kr) = min_elt right in
-      if y = pr - 1 then (remove_min_elt right, kr)
-      else (right, y)
-  in
-  join left (a, b) right
+  in join left (x, y) right
 
 (* Usuwa przedzial v z s*)
 let remove v s =
@@ -187,42 +165,91 @@ let remove v s =
 (* Przeklejone z pSet *)
 let mem x s =
   let rec loop = function
-    | Node (l, k, r, _, _) ->
-        let c = cmp k x in
+      Node (l, v, r, _, _) ->
+        let c = cmp v x in
         c = 0 || loop (if c < 0 then l else r)
     | Empty -> false
-  in
-  loop s
+  in loop s
 
 let iter f s =
   let rec loop = function
-    | Empty -> ()
+      Empty -> ()
     | Node (l, k, r, _, _) -> loop l; f k; loop r
   in
   loop s
 
 let fold f s acc =
   let rec loop acc = function
-    | Empty -> acc
+      Empty -> acc
     | Node (l, k, r, _, _) -> loop (f k (loop acc l)) r
   in
   loop acc s
 
 let elements s =
   let rec loop acc = function
-    | Empty -> acc
+      Empty -> acc
     | Node(l, k, r, _, _) -> loop (k :: loop acc r) l in
   loop [] s
 
-(* Zwraca liczbe elementow (liczb calkowitych), ktore sa <= n *)
-(* Nalezacych do sumy wszystkich przedzialow w s *)
-let below n s =
-  match s with
-  | Empty -> 0
-  | Node (_, _, _, _, c) ->
-      if n = max_int then c
-      else
-        let set = remove (n + 1, max_int) s in
-        match set with
-        | Empty -> 0
-        | Node (_, _, _, _, x) -> x
+let rec below a s = 
+  let (l, x, _) = split a s in maxsum (count l) (if x then 1 else 0);;
+
+
+(* TESTY *)
+
+let add_list =
+  List.fold_left (fun s x -> add x s);;
+let mem_all a l1 =
+  List.filter (fun x -> not (mem x a)) l1 = []
+
+let mem_none a l1 =
+  List.filter (fun x -> mem x a) l1 = []
+
+let l1 = [(-10, -8); (-7, -7); (-4, -1); (1, 1); (3, 7); (10, 15); (100, 1000)];;
+let a = add_list empty l1;;
+
+assert(below 1000 a = 921);;
+
+let (a1, b, a2) = split 4 a;;
+assert(b);;
+assert(List.filter (fun (x, y) -> y >= 4) (elements a1) = []);;
+assert(List.filter (fun (x, y) -> x <= 4) (elements a2) = []);;
+
+let (a1, b, a2) = split 3 a;;
+assert(b);;
+assert(List.filter (fun (x, y) -> y >= 3) (elements a1) = []);;
+assert(List.filter (fun (x, y) -> x <= 3) (elements a2) = []);;
+
+let (a1, b, a2) = split 2 a;;
+assert(not b);;
+assert(List.filter (fun (x, y) -> y >= 2) (elements a1) = []);;
+assert(List.filter (fun (x, y) -> x <= 2) (elements a2) = []);;
+
+let b = add (1, 10) a;;
+let l2 = List.sort (fun (x1, _) (x2, _) -> compare x1 x2) ((1, 10)::l1);;
+
+let c = remove (1, 10) a;;
+let d = remove (1, 10) b;;
+
+assert(elements c = elements d);;
+
+let e = add (min_int, max_int) a;;
+assert(elements e = [(min_int, max_int)]);;
+assert(below 1 e = max_int);;
+
+let f = remove (min_int, max_int) a;;
+assert(elements f = []);;
+
+let l3 = [(16, 99); (2, 2); (8, 9); (-6, -5)];;
+let g = add_list a l3;;
+assert(elements g = [(-10, -1); (1, 1000)]);;
+assert(not (mem 0 g));;
+let h = remove (420, 690) g;;
+assert(not (mem 500 h));;
+assert(elements h = [(-10, -1); (1, 419); (691, 1000)]);;
+let i = add (0, 0) g;;
+assert(elements i = [(-10, 1000)]);;
+let j = remove (-9, -1) i;;
+assert(elements j = [(-10, -10); (0, 1000)]);;
+let k = remove (500, 999) j;;
+assert(elements k = [(-10, -10); (0, 499); (1000, 1000)]);;
