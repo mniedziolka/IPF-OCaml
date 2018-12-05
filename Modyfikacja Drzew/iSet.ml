@@ -2,11 +2,11 @@
 (* Autor: Michał Niedziółka *)
 (* Code review: Jakub Organa *)
 
-(* kolejno: lewe poddrzewo * wartosc(przedzial) * prawe * wysokosc * liczba elementow *)
+(* lewe poddrzewo * wartosc(przedzial) * prawe * wysokosc * liczba elementow *)
 
 type interval = int * int
 type t = 
-  | Empty 
+    Empty 
   | Node of t * interval * t * int * int
 
 let empty = Empty
@@ -14,42 +14,37 @@ let is_empty s = s = Empty
 
 let node x = 
   match x with
-  | Node (_, v, _, _, _) -> v
+    Node (_, v, _, _, _) -> v
   | Empty -> failwith "Empty set passed to function: value"
 
 let height x = 
   match x with
-  | Node (_, _, _, h, _) -> h
+    Node (_, _, _, h, _) -> h
   | Empty -> 0
 
 let count x =
   match x with
-  | Node (_, _, _, _, c) -> c
+    Node (_, _, _, _, c) -> c
   | Empty -> 0
 
-(* Sumuje liczby elementow, przy czym wynik nie przekracza max_int *)
+(* max(a + b, max_int)*)
 let maxsum x y = if max_int - y <= x then max_int else x + y
 
-(* Zwraca liczbe elementow w przedziale (a, b) *)
+(* Zwraca liczbe elementow w przedziale (a, b) z uwzględnieniem przekroczenia max_inta*)
+let elem_count (a, b) = if b - a + 1 <= 0 then max_int else b - a + 1
 
-let elem_count (a, b) =
-  if b - a + 1 <= 0 then max_int
-  else b - a + 1
-
-(* Tworzy nowe drzewo z danego lewego, prawego poddrzewa i nowego korzenia *)
-(* Warunek poczatkowy: oba drzewa sa drzewami AVL, roznica wysokosci = 1, korzen do nich pasuje *)
+(* Stworzenie nowego drzewa jeśli oba drzewa sa drzewami AVL, roznica wysokosci = 1 i korzeń nie psuje warunku *)
 let curr_c l k r = maxsum (maxsum (count l) (count r)) (elem_count k)
 let make l k r = Node (l, k, r, max (height l) (height r) + 1, (curr_c l k r))
-
+(* Stworzenie liścia *)
 let make_leaf v = Node (Empty, v, Empty, 1, elem_count v)
 
 (* PRZEKLEJONE Z pSetu *)
 let bal l k r =
-let hl = height l in
-let hr = height r in
+let hl = height l and hr = height r in
 if hl > hr + 2 then
   match l with
-  | Node (ll, lk, lr, _, _) ->
+    Node (ll, lk, lr, _, _) ->
       if height ll >= height lr then make ll lk (make lr k r)
       else (
       match lr with
@@ -58,7 +53,7 @@ if hl > hr + 2 then
   | Empty -> assert false
 else if hr > hl + 2 then
   match r with
-  | Node (rl, rk, rr, _, _) ->
+    Node (rl, rk, rr, _, _) ->
       if height rr >= height rl then make (make l k rl) rk rr
       else (
       match rl with
@@ -67,18 +62,8 @@ else if hr > hl + 2 then
   | Empty -> assert false
 else make l k r
 
-let rec min_elt = function
-  | Node (Empty, k,_,_,_) -> k
-  | Node (l,_,_,_,_) -> min_elt l
-  | Empty -> raise Not_found
-
-let rec remove_min_elt = function
-  | Node (Empty,_,r,_,_) -> r
-  | Node (l,k,r,_,_) -> bal (remove_min_elt l) k r
-  | Empty -> invalid_arg "PSet.remove_min_elt"
-
 let rec max_elt = function
-  | Node (_,k,Empty,_,_) -> k
+    Node (_,k,Empty,_,_) -> k
   | Node (_,_,r,_,_) -> max_elt r
   | Empty -> raise Not_found
 
@@ -86,6 +71,16 @@ let rec remove_max_elt = function
   | Node (l,_,Empty,_,_) -> l
   | Node (l,k,r,_,_) -> bal l k (remove_max_elt r)
   | Empty -> invalid_arg "PSet.remove_max_elt"
+
+let rec min_elt = function
+    Node (Empty, k,_,_,_) -> k
+  | Node (l,_,_,_,_) -> min_elt l
+  | Empty -> raise Not_found
+
+let rec remove_min_elt = function
+    Node (Empty,_,r,_,_) -> r
+  | Node (l,k,r,_,_) -> bal (remove_min_elt l) k r
+  | Empty -> invalid_arg "PSet.remove_min_elt"
 
 
 (* DOTĄD SĄ KODY PRZEKLEJONE Z pSetu *)
@@ -103,56 +98,60 @@ let rec add_disjoint x = function
   | Empty -> make_leaf x
 
 
-(* join wzięty z pSet *)
+(* join i cmp wzięty z pSet *)
 let rec join l v r =
   match (l, r) with
-  | (Empty, _) -> add_disjoint v r
+    (Empty, _) -> add_disjoint v r
   | (_, Empty) -> add_disjoint v l
   | (Node(ll, lv, lr, lh, _), Node(rl, rv, rr, rh, _)) ->
       if lh > rh + 2 then bal ll lv (join lr v r) else
       if rh > lh + 2 then bal (join l v rl) rv rr else
       make l v r
 
-(* Porownuje wartosc z przedzialem *)
-let cmp_val_set (x, y) v =
-  if v < x then -1
-  else if v > y then 1
-  else 0 (* v zawiera sie w (x, y) *)
-
-(* Czy w s istnieje przedzial, w ktorym zawiera sie x? *)
-let mem x s =
-  let rec loop = function
-    | Node (l, k, r, _, _) ->
-        let c = cmp_val_set k x in
-        c = 0 || loop (if c < 0 then l else r)
-    | Empty -> false
-  in
-  loop s
+let cmp v x =
+  match v with
+  (a, b) -> 
+    if x < a then max_int
+    else if x > b then min_int
+    else 0
+  | _ -> raise Invalid_args
 
 let split x s =
   let rec loop x = function
-    | Empty ->
+      Empty ->
         (Empty, false, Empty)
-    | Node (l, (a, b), r, _, _) ->
-        let c = cmp_val_set (a, b) x in
+    | Node (l, v, r, _, _) ->
+        let c = cmp v x in
         if c = 0 then
-          let new_l =
-            if x > a then add_disjoint (a, x - 1) l
-            else l
-          in
-          let new_r =
-            if x < b then add_disjoint (x + 1, b) r
-            else r
-          in
-          (new_l, true, new_r)
-        else if c < 0 then
-          let (ll, pres, rl) = loop x l in (ll, pres, join rl (a, b) r)
-        else
-          let (lr, pres, rr) = loop x r in (join l (a, b) lr, pres, rr)
-  in
-  loop x s
+          let new_l = if x > fst(v) then add_disjoint (fst(v), x - 1) l else l
+          in let new_r = if x < snd(v) then add_disjoint (x + 1, snd(v)) r else r
+          in (new_l, true, new_r)
+        else if c < 0 then let (ll, pres, rl) = loop x l in (ll, pres, join rl v r)
+          else let (lr, pres, rr) = loop x r in (join l v lr, pres, rr)
+  in loop x s
 
-(* Dodaje przedzial (x, y) do s*)
+(* Dodaje przedzial v do s*)
+(* let add v s =
+  if is_empty s then add_disjoint v s else
+  let (left, _, _) = split (fst(v)) s and (_, _, right) = split (snd(v)) s in
+  let (left, x) = 
+    if is_empty left 
+    then (left, fst(v))
+    else
+      let (begin_left, end_left) = max_elt left 
+      in if fst(v) = end_left + 1 
+      then (remove_max_elt left, begin_left)
+      else (left, fst(v))
+  and (right, y) =
+    if is_empty right 
+    then (right, snd(v))
+    else
+      let (begin_right, end_right) = min_elt right 
+      in if snd(v) = begin_right - 1 
+      then (remove_min_elt right, end_right)
+      else (right, snd(v))
+  in join left (x, y) right *)
+
 let add (x, y) s =
   if is_empty s then add_disjoint (x, y) s else
   let (left, _, _) = split x s in
@@ -175,15 +174,25 @@ let add (x, y) s =
   in
   join left (a, b) right
 
-(* Usuwa przedzial (x, y) z s*)
-let remove (x, y) s =
+(* Usuwa przedzial v z s*)
+let remove v s =
   if is_empty s then empty else
-  let (left, _, _) = split x s in
-  let (_, _, right) = split y s in
-  match (left, right) with
-  | (Empty, _) -> right
-  | (_, Empty) -> left
-  | _ -> join left (min_elt right) (remove_min_elt right)
+  let (l, _, _) = split (fst(v)) s
+  and (_, _, r) = split (snd(v)) s in
+  match (l, r) with
+    (Empty, _) -> r
+  | (_, Empty) -> l
+  | (_, _) -> join l (min_elt r) (remove_min_elt r)
+
+(* Przeklejone z pSet *)
+let mem x s =
+  let rec loop = function
+    | Node (l, k, r, _, _) ->
+        let c = cmp k x in
+        c = 0 || loop (if c < 0 then l else r)
+    | Empty -> false
+  in
+  loop s
 
 let iter f s =
   let rec loop = function
