@@ -1,0 +1,255 @@
+(* Modyfikacja drzew *)
+(* Autor: Michał Niedziółka *)
+(* Code review: Jakub Organa *)
+
+(* lewe poddrzewo * przedzial * prawe * wysokosc * liczba elementow *)
+
+type interval = int * int
+type t = 
+    Empty 
+  | Node of t * interval * t * int * int
+
+let empty = Empty
+let is_empty s = s = Empty
+
+let node x = 
+  match x with
+    Node (_, v, _, _, _) -> v
+  | Empty -> failwith "Empty set passed to function: value"
+
+let height x = 
+  match x with
+    Node (_, _, _, h, _) -> h
+  | Empty -> 0
+
+let count x =
+  match x with
+    Node (_, _, _, _, c) -> c
+  | Empty -> 0
+
+(* max(a + b, max_int)*)
+let maxsum x y = if max_int - y <= x then max_int else x + y
+
+(* Zwraca liczbe elementow w przedziale (a, b) z uwzględnieniem przekroczenia max_inta*)
+let elem_count (a, b) = if b - a + 1 <= 0 then max_int else b - a + 1
+
+(* Stworzenie nowego drzewa jeśli oba drzewa sa drzewami AVL, roznica wysokosci = 1 i korzeń nie psuje warunku *)
+let curr_c l k r = maxsum (maxsum (count l) (count r)) (elem_count k)
+let make l k r = Node (l, k, r, max (height l) (height r) + 1, (curr_c l k r))
+(* Stworzenie liścia *)
+let make_leaf v = Node (Empty, v, Empty, 1, elem_count v)
+
+(* PRZEKLEJONE Z pSetu *)
+let bal l k r =
+let hl = height l and hr = height r in
+if hl > hr + 2 then
+  match l with
+    Node (ll, lk, lr, _, _) ->
+      if height ll >= height lr then make ll lk (make lr k r)
+      else (
+      match lr with
+        | Node (lrl, lrk, lrr, _, _) -> make (make ll lk lrl) lrk (make lrr k r)
+        | Empty -> assert false)
+  | Empty -> assert false
+else if hr > hl + 2 then
+  match r with
+    Node (rl, rk, rr, _, _) ->
+      if height rr >= height rl then make (make l k rl) rk rr
+      else (
+      match rl with
+        | Node (rll, rlk, rlr, _, _) -> make (make l k rll) rlk (make rlr rk rr)
+        | Empty -> assert false)
+  | Empty -> assert false
+else make l k r
+
+let rec max_elt = function
+    Node (_,k,Empty,_,_) -> k
+  | Node (_,_,r,_,_) -> max_elt r
+  | Empty -> raise Not_found
+
+let rec remove_max_elt = function
+    Node (l,_,Empty,_,_) -> l
+  | Node (l,k,r,_,_) -> bal l k (remove_max_elt r)
+  | Empty -> invalid_arg "PSet.remove_max_elt"
+
+let rec min_elt = function
+    Node (Empty, k,_,_,_) -> k
+  | Node (l,_,_,_,_) -> min_elt l
+  | Empty -> raise Not_found
+
+let rec remove_min_elt = function
+    Node (Empty,_,r,_,_) -> r
+  | Node (l,k,r,_,_) -> bal (remove_min_elt l) k r
+  | Empty -> invalid_arg "PSet.remove_min_elt"
+
+
+(* DOTĄD SĄ KODY PRZEKLEJONE Z pSetu *)
+
+exception Invalid_args
+
+(* Dodaję do drzewa przedział który jest rozłączny z pozostałymi na drzewie *)
+let rec add_disjoint x = function
+    Node (l, v, r, _, _) ->
+    let c = fst(x) > snd(v) in
+    if c then let node_right = add_disjoint x r 
+      in bal l v node_right
+    else let node_left = add_disjoint x l 
+      in bal node_left v r
+  | Empty -> make_leaf x
+
+
+(* join i cmp wzięty z pSet *)
+let rec join l v r =
+  match (l, r) with
+     (Empty, _) -> add_disjoint v r
+  | (_, Empty) -> add_disjoint v l
+  | (Node(ll, lv, lr, lh, _), Node(rl, rv, rr, rh, _)) ->
+      if lh > rh + 2 then bal ll lv (join lr v r) else
+      if rh > lh + 2 then bal (join l v rl) rv rr else
+      make l v r
+
+let cmp v x =
+  match v with
+    (a, b) -> 
+    if x > b then max_int
+    else if x < a then min_int
+    else 0
+  | _ -> raise Invalid_args
+
+let split x s =
+  let rec loop x = function
+      Empty ->
+        (Empty, false, Empty)
+    | Node (l, v, r, _, _) ->
+        let c = cmp v x in
+        if c = 0 then
+          let new_l = if x > fst(v) then add_disjoint (fst(v), x - 1) l else l
+          in let new_r = if x < snd(v) then add_disjoint (x + 1, snd(v)) r else r
+          in (new_l, true, new_r)
+        else if c < 0 then let (ll, pres, rl) = loop x l in (ll, pres, join rl v r)
+          else let (lr, pres, rr) = loop x r in (join l v lr, pres, rr)
+  in loop x s
+
+(* Dodaje przedzial v do s*)
+let add v s =
+  if is_empty s then add_disjoint v s else
+  let (left, _, _) = split (fst(v)) s and (_, _, right) = split (snd(v)) s in
+  let (left, x) = 
+    if is_empty left 
+    then (left, fst(v))
+    else
+      let (begin_left, end_left) = max_elt left 
+      in if fst(v) = end_left + 1 
+      then (remove_max_elt left, begin_left)
+      else (left, fst(v))
+  and (right, y) =
+    if is_empty right 
+    then (right, snd(v))
+    else
+      let (begin_right, end_right) = min_elt right 
+      in if snd(v) = begin_right - 1 
+      then (remove_min_elt right, end_right)
+      else (right, snd(v))
+  in join left (x, y) right
+
+(* Usuwa przedzial v z s*)
+let remove v s =
+  if is_empty s then empty else
+  let (l, _, _) = split (fst(v)) s
+  and (_, _, r) = split (snd(v)) s in
+  match (l, r) with
+    (Empty, _) -> r
+  | (_, Empty) -> l
+  | (_, _) -> join l (min_elt r) (remove_min_elt r)
+
+(* Przeklejone z pSet *)
+let mem x s =
+  let rec loop = function
+      Node (l, v, r, _, _) ->
+        let c = cmp v x in
+        c = 0 || loop (if c < 0 then l else r)
+    | Empty -> false
+  in loop s
+
+let iter f s =
+  let rec loop = function
+      Empty -> ()
+    | Node (l, k, r, _, _) -> loop l; f k; loop r
+  in
+  loop s
+
+let fold f s acc =
+  let rec loop acc = function
+      Empty -> acc
+    | Node (l, k, r, _, _) -> loop (f k (loop acc l)) r
+  in
+  loop acc s
+
+let elements s =
+  let rec loop acc = function
+      Empty -> acc
+    | Node(l, k, r, _, _) -> loop (k :: loop acc r) l in
+  loop [] s
+
+let rec below a s = 
+  let (l, x, _) = split a s in maxsum (count l) (if x then 1 else 0);;
+
+
+(* TESTY *)
+
+let add_list =
+  List.fold_left (fun s x -> add x s);;
+let mem_all a l1 =
+  List.filter (fun x -> not (mem x a)) l1 = []
+
+let mem_none a l1 =
+  List.filter (fun x -> mem x a) l1 = []
+
+let l1 = [(-10, -8); (-7, -7); (-4, -1); (1, 1); (3, 7); (10, 15); (100, 1000)];;
+let a = add_list empty l1;;
+
+assert(below 1000 a = 921);;
+
+let (a1, b, a2) = split 4 a;;
+assert(b);;
+assert(List.filter (fun (x, y) -> y >= 4) (elements a1) = []);;
+assert(List.filter (fun (x, y) -> x <= 4) (elements a2) = []);;
+
+let (a1, b, a2) = split 3 a;;
+assert(b);;
+assert(List.filter (fun (x, y) -> y >= 3) (elements a1) = []);;
+assert(List.filter (fun (x, y) -> x <= 3) (elements a2) = []);;
+
+let (a1, b, a2) = split 2 a;;
+assert(not b);;
+assert(List.filter (fun (x, y) -> y >= 2) (elements a1) = []);;
+assert(List.filter (fun (x, y) -> x <= 2) (elements a2) = []);;
+
+let b = add (1, 10) a;;
+let l2 = List.sort (fun (x1, _) (x2, _) -> compare x1 x2) ((1, 10)::l1);;
+
+let c = remove (1, 10) a;;
+let d = remove (1, 10) b;;
+
+assert(elements c = elements d);;
+
+let e = add (min_int, max_int) a;;
+assert(elements e = [(min_int, max_int)]);;
+assert(below 1 e = max_int);;
+
+let f = remove (min_int, max_int) a;;
+assert(elements f = []);;
+
+let l3 = [(16, 99); (2, 2); (8, 9); (-6, -5)];;
+let g = add_list a l3;;
+assert(elements g = [(-10, -1); (1, 1000)]);;
+assert(not (mem 0 g));;
+let h = remove (420, 690) g;;
+assert(not (mem 500 h));;
+assert(elements h = [(-10, -1); (1, 419); (691, 1000)]);;
+let i = add (0, 0) g;;
+assert(elements i = [(-10, 1000)]);;
+let j = remove (-9, -1) i;;
+assert(elements j = [(-10, -10); (0, 1000)]);;
+let k = remove (500, 999) j;;
+assert(elements k = [(-10, -10); (0, 499); (1000, 1000)]);;
