@@ -13,9 +13,12 @@ let topol l =
         else    
         begin
                 kolor := PMap.add v 1 (PMap.remove v !kolor);
-                let wynik = List.fold_left (fun a el -> (dfs el)@a) [] (PMap.find v !graf) in
+                let wynik = (List.fold_left (fun a el -> (dfs el)@a) [] (PMap.find v !graf)) in
                 kolor := PMap.add v 2 (PMap.remove v !kolor);
                 wynik
         end
     in PMap.foldi (fun k _ li -> if (PMap.find k !kolor) = 2 then li else (dfs k)@li ) !graf []
 ;;
+
+let g = [(1, [2;3]);(3, [6;7]);(6, [4;7]);(7, [5]);(2, [5]);(8, []);(4, []);(5, [])];;
+let x = List.iter print_int (topol g);;
