@@ -2,20 +2,22 @@
 (* Autor: Michał Niedziółka *)
 (* Code review: Michał Szczęśniak *)
 
+open PMap
 exception Cykliczne
 
 let topol l =
     let graf = ref (List.fold_left (fun m (k, s) -> add k s m) empty l)
     and kolor = ref (List.fold_left (fun m (k, s) -> add k 0 m) empty l) in
     let rec dfs v =
-        let akt_kolor = find v !kolor in 
+        let akt_kolor = try find v !kolor with _ -> begin kolor := add v 0 !kolor; 0 end
+        in 
         if akt_kolor = 1 then raise Cykliczne
         else
             if akt_kolor = 2 then []
             else 
                 begin
                         kolor := add v 1 (remove v !kolor);
-                        let wynik = (List.fold_left (fun a el -> (dfs el)@a) [] (find v !graf)) in
+                        let wynik = (List.fold_left (fun a el -> (dfs el)@a) [] (try find v !graf with _ -> [])) in
                         kolor := add v 2 (remove v !kolor);
                         v::wynik
                 end
