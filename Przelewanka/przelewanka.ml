@@ -13,8 +13,8 @@ let przelewanka tab =
 		end
 
 	and solve tab = 
-		let refill k state = begin state.(k) <- fst tab.(k); state; end
-		and spill k state = begin state.(k) <- 0; state; end
+		let refill k state = begin state.(k) <- fst tab.(k); end; state
+		and spill k state = begin state.(k) <- 0; end; state
 		and pour k state = 
 		begin
 			let listates = ref []
@@ -35,8 +35,7 @@ let przelewanka tab =
 						listates := state::!listates;
 					end
 			done;	
-			!listates
-		end
+		end;	!listates
 
 		in let hash_table = Hashtbl.create 1488997 
 		and queue = Queue.create () 
@@ -59,10 +58,13 @@ let przelewanka tab =
 					for i = 0 to ((Array.length curr) - 1) do
 						let re = refill i curr and sp = spill i curr and po = pour i curr in
 						begin
+							for j = 0 to ((Array.length re) - 1) do
+								print_int re.(j)
+							done;
 							List.iter (fun el -> if (not (Hashtbl.mem hash_table el)) then begin Hashtbl.add hash_table el (dist+1); Queue.add el queue; end
 																	   else if Hashtbl.find hash_table el = (-1) then 
 																	   begin flag := 1; result := (dist + 1); end 
-																	   else ()) (re::(sp::po))
+																	   else (for j = 0 to ((Array.length el) - 1) do print_int el.(j) done;)) (re::(sp::po));
 						end
 					done 
 				end
@@ -72,3 +74,5 @@ let przelewanka tab =
 
 
 	in if exists tab = 1 then solve tab else (-1)
+
+(* przelewanka [|(3,2);(3,3);(1,0);(12,1)|];; *)
